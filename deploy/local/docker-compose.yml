@@ -1,0 +1,25 @@
+version: "3.7"
+services:
+    postgres:
+        container_name: postgres
+        image: postgres
+        environment:
+            POSTGRES_USER: root
+            POSTGRES_PASSWORD: secret
+            PGDATA: /data/postgres
+        volumes:
+            - beats_postgres:/data/postgres
+            - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql
+        ports:
+            - "6432:5432"
+        networks:
+            - backend
+        restart: unless-stopped
+
+volumes:
+    beats_postgres:
+
+networks:
+    backend:
+        name: backend
+        driver: bridge
