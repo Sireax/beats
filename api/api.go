@@ -2,6 +2,7 @@ package api
 
 import (
 	"beats/api/handlers"
+	"beats/api/middleware"
 	"github.com/gin-gonic/gin"
 )
 import "github.com/rs/zerolog/log"
@@ -47,9 +48,13 @@ func (a *API) UseRoutes() {
 
 	a.r.POST("/api/register", handlers.Register)
 	a.r.POST("/api/login", handlers.Login)
-	a.r.POST("/api/user", handlers.User)
+	a.r.POST("/api/user", middleware.AuthMiddleware, handlers.User)
 
 	a.r.GET("/api/roles", handlers.Roles)
+
+	a.r.POST("/api/beats/create", middleware.AuthMiddleware, handlers.CreateBeat)
+	a.r.POST("/api/snippets/create", middleware.AuthMiddleware, handlers.CreateSnippet)
+	a.r.POST("/api/demo/create", middleware.AuthMiddleware, handlers.CreateDemo)
 }
 
 func (a *API) Start() {

@@ -12,9 +12,5 @@ type Beat struct {
 	Genre       *Genre    `json:"genre"`
 	UserID      uint      `json:"userID"`
 	User        *User     `json:"user"`
-	SnippetID   uint      `json:"snippetID"`
-	Snippet     *Snippet  `json:"snippet"`
-	DemoID      uint      `json:"demoID"`
-	Demo        *Demo     `json:"demo"`
 	IsHide      bool      `json:"isHide"`
 }
