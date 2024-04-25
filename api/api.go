@@ -47,6 +47,9 @@ func (a *API) UseRoutes() {
 
 	a.r.POST("/api/register", handlers.Register)
 	a.r.POST("/api/login", handlers.Login)
+	a.r.POST("/api/user", handlers.User)
+
+	a.r.GET("/api/roles", handlers.Roles)
 }
 
 func (a *API) Start() {

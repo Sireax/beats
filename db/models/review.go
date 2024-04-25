@@ -1,14 +1,14 @@
 package models
 
-import (
-	"gorm.io/gorm"
-)
+import "time"
 
 type Review struct {
-	gorm.Model
-	UserID  uint
-	User    *User `json:"user"`
-	BeatID  uint
-	Beat    *Beat  `json:"beat"`
-	Content string `json:"content"`
+	ID        uint `gorm:"primarykey" json:"id"`
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uint
+	User      *User `json:"user"`
+	BeatID    uint
+	Beat      *Beat  `json:"beat"`
+	Content   string `json:"content"`
 }

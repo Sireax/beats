@@ -3,7 +3,7 @@ package models
 import "time"
 
 type Beat struct {
-	ID          uint      `gorm:"primarykey"`
+	ID          uint      `gorm:"primarykey" json:"id"`
 	ReleaseDate time.Time `json:"releaseDate"`
 	Photo       string    `json:"photo"`
 	Title       string    `json:"title"`

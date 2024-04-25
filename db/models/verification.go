@@ -1,7 +1,7 @@
 package models
 
 type Verification struct {
-	ID                   uint `gorm:"primarykey"`
+	ID                   uint `gorm:"primarykey" json:"id"`
 	BeatID               uint
 	Beat                 *Beat `json:"beat"`
 	UserID               uint

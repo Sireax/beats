@@ -21,6 +21,18 @@ func Register(c *gin.Context) {
 		c.JSON(400, gin.H{"error": err.Error()})
 		return
 	}
+	if r.Username == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Username is required"})
+	}
+	if r.Email == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+	}
+	if r.Password == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Password is required"})
+	}
+	if r.RoleID == 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "RoleID is required"})
+	}
 	var userExist int
 	err := db.DB.Raw("SELECT COUNT(id) from users where email=?", r.Email).Scan(&userExist).Error
 	if err != nil {
@@ -29,7 +41,20 @@ func Register(c *gin.Context) {
 	}
 	if userExist > 0 {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
-			"message": "User already exist",
+			"message": "Пользователь уже существует",
+		})
+		return
+	}
+
+	var roleExists int
+	err = db.DB.Raw("SELECT COUNT(id) from roles where id=?", r.RoleID).Scan(&roleExists).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	if roleExists == 0 {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{
+			"message": "Роль не существует",
 		})
 		return
 	}
@@ -38,8 +63,8 @@ func Register(c *gin.Context) {
 	user := models.User{
 		Email:    r.Email,
 		Username: r.Username,
-		Photo:    r.Photo,
 		Password: password,
+		RoleID:   r.RoleID,
 	}
 	db.DB.Create(&user)
 	c.JSON(200, user)
@@ -50,6 +75,12 @@ func Login(c *gin.Context) {
 	if err := c.BindJSON(&r); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"message": "invalid request"})
 		return
+	}
+	if r.Email == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Email is required"})
+	}
+	if r.Password == "" {
+		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": "Password is required"})
 	}
 
 	var user models.User
@@ -84,17 +115,4 @@ func User(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, user)
-}
-
-func Logout(c *gin.Context) {
-	cookie := &http.Cookie{
-		Name:     "jwt",
-		Value:    "",
-		Expires:  time.Now().Add(-time.Hour),
-		HttpOnly: true,
-	}
-
-	http.SetCookie(c.Writer, cookie)
-
-	c.JSON(http.StatusOK, gin.H{"message": "success"})
 }

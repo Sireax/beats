@@ -1,7 +1,7 @@
 package models
 
 type License struct {
-	ID            uint    `gorm:"primarykey"`
+	ID            uint    `gorm:"primarykey" json:"id"`
 	Price         float32 `json:"price"`
 	RentalTime    string  `json:"rentalTime"`
 	LicenseTypeID uint
