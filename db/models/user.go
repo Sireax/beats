@@ -5,7 +5,6 @@ type User struct {
 	Username string `json:"name"`
 	Email    string `json:"email"`
 	Password []byte `json:"-"`
-	RoleID   uint
+	RoleID   uint   `json:"-"`
 	Role     *Role  `json:"role"`
-	Photo    string `json:"photo"`
 }

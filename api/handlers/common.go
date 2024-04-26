@@ -14,6 +14,19 @@ func Roles(c *gin.Context) {
 	if err != nil {
 		log.Error().Err(err).Msg("Error getting roles")
 		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
 	}
 	c.JSON(http.StatusOK, roles)
+}
+
+func Genres(c *gin.Context) {
+	var genres []*models.Genre
+	err := db.DB.Find(&genres).Error
+	if err != nil {
+		log.Error().Err(err).Msg("Error getting genres")
+		c.JSON(http.StatusInternalServerError, gin.H{})
+		return
+	}
+
+	c.JSON(http.StatusOK, genres)
 }

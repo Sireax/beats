@@ -67,7 +67,8 @@ func Register(c *gin.Context) {
 		RoleID:   r.RoleID,
 	}
 	db.DB.Create(&user)
-	c.JSON(200, user)
+
+	c.JSON(200, gin.H{})
 }
 
 func Login(c *gin.Context) {
@@ -105,7 +106,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"status": "success", "token": token, "user": user})
+	c.JSON(http.StatusOK, gin.H{"status": "success", "token": token})
 }
 
 func User(c *gin.Context) {
@@ -114,5 +115,14 @@ func User(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
+
+	err = db.DB.Where("id = ?", user.ID).
+		Preload("Role").
+		Find(&user).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
 	c.JSON(http.StatusOK, user)
 }

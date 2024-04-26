@@ -40,7 +40,7 @@ func (a *API) UseRoutes() {
 	}
 	a.r.Use(cors)
 
-	a.r.GET("/test", func(c *gin.Context) {
+	a.r.GET("/stub", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "OK",
 		})
@@ -51,6 +51,7 @@ func (a *API) UseRoutes() {
 	a.r.GET("/api/user", middleware.AuthMiddleware, handlers.User)
 
 	a.r.GET("/api/roles", handlers.Roles)
+	a.r.GET("/api/genres", handlers.Genres)
 
 	a.r.POST("/api/beats/create", middleware.AuthMiddleware, handlers.CreateBeat)
 	a.r.POST("/api/snippets/create", middleware.AuthMiddleware, handlers.CreateSnippet)
