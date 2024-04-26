@@ -53,9 +53,12 @@ func (a *API) UseRoutes() {
 	a.r.GET("/api/roles", handlers.Roles)
 	a.r.GET("/api/genres", handlers.Genres)
 
-	a.r.POST("/api/beats/create", middleware.AuthMiddleware, handlers.CreateBeat)
-	a.r.POST("/api/snippets/create", middleware.AuthMiddleware, handlers.CreateSnippet)
-	a.r.POST("/api/demo/create", middleware.AuthMiddleware, handlers.CreateDemo)
+	a.r.GET("/api/artists", middleware.AuthMiddleware, middleware.ClientMiddleware, handlers.Artists)
+
+	a.r.GET("/api/beats", middleware.AuthMiddleware, handlers.Beats)
+	a.r.POST("/api/beats/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateBeat)
+	a.r.POST("/api/snippets/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateSnippet)
+	a.r.POST("/api/demo/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateDemo)
 }
 
 func (a *API) Start() {

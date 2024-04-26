@@ -116,13 +116,5 @@ func User(c *gin.Context) {
 		return
 	}
 
-	err = db.DB.Where("id = ?", user.ID).
-		Preload("Role").
-		Find(&user).Error
-	if err != nil {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
 	c.JSON(http.StatusOK, user)
 }

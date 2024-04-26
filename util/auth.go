@@ -28,7 +28,7 @@ func ExtractUserFromRequest(c *gin.Context) (*models.User, error) {
 	}
 
 	var user models.User
-	err = db.DB.Where("id = ?", claims["iss"]).First(&user).Error
+	err = db.DB.Where("id = ?", claims["iss"]).Preload("Role").First(&user).Error
 	if err != nil || user.ID == 0 {
 		return nil, errors.New("хуйня")
 	}
