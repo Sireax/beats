@@ -23,6 +23,8 @@ func NewAPI(addr string) *API {
 }
 
 func (a *API) UseRoutes() {
+	api := a.r.Group("/api")
+
 	cors := func(c *gin.Context) {
 		origin := c.GetHeader("Origin")
 		c.Header("Access-Control-Allow-Origin", origin)
@@ -39,26 +41,27 @@ func (a *API) UseRoutes() {
 		c.Next()
 	}
 	a.r.Use(cors)
+	api.Use(cors)
 
-	a.r.GET("/stub", func(c *gin.Context) {
-		c.JSON(200, gin.H{
-			"status": "OK",
-		})
-	})
+	api.POST("/register", handlers.Register)
+	api.POST("/login", handlers.Login)
+	api.GET("/user", middleware.AuthMiddleware, handlers.User)
 
-	a.r.POST("/api/register", handlers.Register)
-	a.r.POST("/api/login", handlers.Login)
-	a.r.GET("/api/user", middleware.AuthMiddleware, handlers.User)
+	api.GET("/roles", handlers.Roles)
+	api.GET("/genres", handlers.Genres)
 
-	a.r.GET("/api/roles", handlers.Roles)
-	a.r.GET("/api/genres", handlers.Genres)
+	api.GET("/artists", handlers.Artists)
+	api.GET("/artists/:artist", handlers.Artist)
 
-	a.r.GET("/api/artists", middleware.AuthMiddleware, middleware.ClientMiddleware, handlers.Artists)
+	api.GET("/beats", handlers.Beats)
+	api.GET("/beats/purchased", middleware.AuthMiddleware, middleware.ClientMiddleware, handlers.PurchasedBeats)
+	api.GET("/beats/:beat", handlers.Beat)
+	//api.POST("/beats/:beat/licenses/:license/edit", handlers.Beats)
+	api.POST("/beats/:beat/purchase", middleware.AuthMiddleware, middleware.ClientMiddleware, handlers.PurchaseBeat)
+	api.POST("/beats/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateBeat)
 
-	a.r.GET("/api/beats", middleware.AuthMiddleware, handlers.Beats)
-	a.r.POST("/api/beats/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateBeat)
-	a.r.POST("/api/snippets/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateSnippet)
-	a.r.POST("/api/demo/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateDemo)
+	api.POST("/snippets/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateSnippet)
+	api.POST("/demo/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateDemo)
 }
 
 func (a *API) Start() {

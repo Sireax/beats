@@ -7,6 +7,7 @@ import (
 	"beats/util"
 	"github.com/gin-gonic/gin"
 	"github.com/rs/zerolog/log"
+	"gorm.io/gorm/clause"
 	"net/http"
 	"time"
 )
@@ -99,46 +100,93 @@ func CreateBeat(c *gin.Context) {
 		UserID:      user.ID,
 		IsHide:      false,
 	}
-	err = db.DB.Create(&beat).Error
+	err = db.DB.Clauses(clause.Returning{}).Create(&beat).Error
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
+	}
+	for _, lType := range models.LicenseTypesList() {
+		err = db.DB.Debug().
+			Exec(
+				"INSERT INTO licenses (price, rental_time, license_type_id, beat_id, is_active) VALUES (?, ?, (select id from license_types where type = ?), ?, ?)",
+				0, "", lType, beat.ID, false,
+			).Error
+		if err != nil {
+			c.AbortWithStatus(http.StatusInternalServerError)
+			log.Error().Err(err).Msg("error inserting license type")
+			return
+		}
 	}
 
 	c.JSON(http.StatusCreated, beat)
 }
 
 func Beats(c *gin.Context) {
+	beats := make([]*models.Beat, 0)
+
+	err := db.DB.Raw("SELECT * FROM beats ORDER BY id DESC").
+		Scan(&beats).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error getting all beats")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(http.StatusOK, beats)
+}
+
+func Beat(c *gin.Context) {
+	beatId := c.Param("beat")
+
+	var beat *models.Beat
+	err := db.DB.Raw("select * from beats where id = ?", beatId).Scan(&beat).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("error getting beat")
+		return
+	}
+	if beat == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+	err = db.DB.
+		Raw("select * from licenses where beat_id = ?", beat.ID).
+		Scan(&beat.Licenses).Error
+
+	c.JSON(http.StatusOK, beat)
+}
+
+func PurchaseBeat(c *gin.Context) {
+	beatID := c.Param("beat")
+	if beatID == "" {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 	user, err := util.ExtractUserFromRequest(c)
 	if err != nil {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
-
-	var beats []*models.Beat
-
-	switch user.RoleID {
-	case models.ArtistRoleID:
-		err = db.DB.Raw("SELECT * FROM beats WHERE user_id = ? ORDER BY id DESC", user.ID).
-			Scan(&beats).Error
-		if err != nil {
-			log.Error().Err(err).Msg("error getting user beats")
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
-	case models.ClientRoleID:
-		err = db.DB.Raw("SELECT * FROM beats ORDER BY id DESC").
-			Scan(&beats).Error
-		if err != nil {
-			log.Error().Err(err).Msg("error getting all beats")
-			c.AbortWithStatus(http.StatusInternalServerError)
-			return
-		}
+	var beat *models.Beat
+	err = db.DB.Where("id = ?", beatID).First(&beat).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error getting beat")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
 	}
-	// иначе отдает null вместо пустого массива
-	if len(beats) == 0 {
-		beats = []*models.Beat{}
+	if beat == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
 	}
 
-	c.JSON(http.StatusOK, beats)
+	err = db.DB.
+		Exec("INSERT INTO purchases (user_id, beat_id) VALUES (?, ?)", user.ID, beatID).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+}
+
+func PurchasedBeats(c *gin.Context) {
+
 }

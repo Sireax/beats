@@ -27,7 +27,6 @@ func Connect(addr string) {
 		&models.Review{},
 		&models.Role{},
 		&models.Snippet{},
-		&models.SongTag{},
 		&models.Tag{},
 		&models.Verification{},
 		&models.VerificationStatus{},

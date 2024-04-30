@@ -13,4 +13,9 @@ type Beat struct {
 	UserID      uint      `json:"userID"`
 	User        *User     `json:"user"`
 	IsHide      bool      `json:"isHide"`
+
+	Demos    []*Demo    `json:"demos"`
+	Snippets []*Snippet `json:"snippets"`
+	Licenses []*License `json:"licenses"`
+	Tags     []*Tag     `gorm:"many2many:song_tags;" json:"tags"`
 }
