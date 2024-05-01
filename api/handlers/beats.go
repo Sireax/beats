@@ -133,6 +133,7 @@ func Beats(c *gin.Context) {
 	}
 	for _, beat := range beats {
 		db.DB.Raw("select * from users where id = ?", beat.UserID).Scan(&beat.User)
+		db.DB.Raw("select * from tags join public.song_tags st on tags.id = st.tag_id WHERE st.beat_id = ?", beat.ID).Scan(&beat.Tags)
 	}
 
 	c.JSON(http.StatusOK, beats)
@@ -152,18 +153,21 @@ func Beat(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
-	err = db.DB.
+	db.DB.
 		Raw("select * from licenses where beat_id = ?", beat.ID).
-		Scan(&beat.Licenses).Error
-	err = db.DB.
+		Scan(&beat.Licenses)
+	db.DB.
 		Raw("select * from users where id = ?", beat.UserID).
-		Scan(&beat.User).Error
-	err = db.DB.
+		Scan(&beat.User)
+	db.DB.
 		Raw("select * from snippets where beat_id = ?", beat.ID).
-		Scan(&beat.Snippets).Error
-	err = db.DB.
+		Scan(&beat.Snippets)
+	db.DB.
 		Raw("select * from demos where beat_id = ?", beat.ID).
-		Scan(&beat.Demos).Error
+		Scan(&beat.Demos)
+	db.DB.
+		Raw("select * from tags join public.song_tags st on tags.id = st.tag_id WHERE st.beat_id = ?", beat.ID).
+		Scan(&beat.Tags)
 
 	c.JSON(http.StatusOK, beat)
 }
