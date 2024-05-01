@@ -131,6 +131,9 @@ func Beats(c *gin.Context) {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
+	for _, beat := range beats {
+		db.DB.Raw("select * from users where id = ?", beat.UserID).Scan(&beat.User)
+	}
 
 	c.JSON(http.StatusOK, beats)
 }
@@ -152,11 +155,72 @@ func Beat(c *gin.Context) {
 	err = db.DB.
 		Raw("select * from licenses where beat_id = ?", beat.ID).
 		Scan(&beat.Licenses).Error
+	err = db.DB.
+		Raw("select * from users where id = ?", beat.UserID).
+		Scan(&beat.User).Error
+	err = db.DB.
+		Raw("select * from snippets where beat_id = ?", beat.ID).
+		Scan(&beat.Snippets).Error
+	err = db.DB.
+		Raw("select * from demos where beat_id = ?", beat.ID).
+		Scan(&beat.Demos).Error
 
 	c.JSON(http.StatusOK, beat)
 }
 
+func EditLicense(c *gin.Context) {
+	var r requests.EditLicenseRequest
+	if err := c.ShouldBindJSON(&r); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	beatID := c.Param("beat")
+	licenseID := c.Param("license")
+
+	var beat *models.Beat
+	err := db.DB.Raw("SELECT * FROM beats WHERE id = ?", beatID).Scan(&beat).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("error getting beat")
+		return
+	}
+	if beat == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	var license *models.License
+	err = db.DB.Raw("SELECT * FROM licenses WHERE id = ?", licenseID).Scan(&license).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("error getting license")
+		return
+	}
+	if license == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	err = db.DB.
+		Exec("UPDATE licenses SET price = ?, rental_time = ?, is_active = ? WHERE id = ?",
+			r.Price, r.RentalTime, r.IsActive, licenseID).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("error updating license")
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{})
+}
+
 func PurchaseBeat(c *gin.Context) {
+	var r requests.PurchaseBeatRequest
+	if err := c.ShouldBindJSON(&r); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
 	beatID := c.Param("beat")
 	if beatID == "" {
 		c.AbortWithStatus(http.StatusNotFound)
@@ -178,15 +242,48 @@ func PurchaseBeat(c *gin.Context) {
 		c.AbortWithStatus(http.StatusNotFound)
 		return
 	}
+	var license *models.License
+	err = db.DB.Raw("SELECT * FROM licenses WHERE id = ? LIMIT 1", r.LicenseID).Scan(&license).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error getting license")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	if license == nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
 
 	err = db.DB.
-		Exec("INSERT INTO purchases (user_id, beat_id) VALUES (?, ?)", user.ID, beatID).Error
+		Exec("INSERT INTO purchases (user_id, beat_id, license_id) VALUES (?, ?, ?)", user.ID, beatID, license.ID).Error
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
 	}
+
+	c.JSON(http.StatusCreated, gin.H{})
 }
 
 func PurchasedBeats(c *gin.Context) {
+	user, err := util.ExtractUserFromRequest(c)
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
 
+	beats := make([]*models.Beat, 0)
+	err = db.DB.
+		Raw("SELECT beats.* FROM beats join public.purchases p on beats.id = p.beat_id where p.user_id = ? order by created_at desc", user.ID).
+		Scan(&beats).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("error getting purchased beats")
+		return
+	}
+	for _, beat := range beats {
+		db.DB.Raw("select * from users where id = ?", beat.UserID).Scan(&beat.User)
+		db.DB.Raw("select * from licenses where beat_id = ?", beat.ID).Scan(&beat.Licenses)
+	}
+
+	c.JSON(http.StatusOK, beats)
 }

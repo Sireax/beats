@@ -49,6 +49,7 @@ func (a *API) UseRoutes() {
 
 	api.GET("/roles", handlers.Roles)
 	api.GET("/genres", handlers.Genres)
+	api.GET("/tags", handlers.Tags)
 
 	api.GET("/artists", handlers.Artists)
 	api.GET("/artists/:artist", handlers.Artist)
@@ -56,7 +57,7 @@ func (a *API) UseRoutes() {
 	api.GET("/beats", handlers.Beats)
 	api.GET("/beats/purchased", middleware.AuthMiddleware, middleware.ClientMiddleware, handlers.PurchasedBeats)
 	api.GET("/beats/:beat", handlers.Beat)
-	//api.POST("/beats/:beat/licenses/:license/edit", handlers.Beats)
+	api.POST("/beats/:beat/licenses/:license/edit", handlers.EditLicense)
 	api.POST("/beats/:beat/purchase", middleware.AuthMiddleware, middleware.ClientMiddleware, handlers.PurchaseBeat)
 	api.POST("/beats/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateBeat)
 
