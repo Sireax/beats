@@ -156,6 +156,10 @@ func Beat(c *gin.Context) {
 	db.DB.
 		Raw("select * from licenses where beat_id = ?", beat.ID).
 		Scan(&beat.Licenses)
+	for _, license := range beat.Licenses {
+		db.DB.Raw("select * from license_types where id = ?", license.LicenseTypeID).
+			Scan(&license.LicenseType)
+	}
 	db.DB.
 		Raw("select * from users where id = ?", beat.UserID).
 		Scan(&beat.User)
