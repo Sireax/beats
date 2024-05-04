@@ -7,6 +7,7 @@ import (
 	"beats/util"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"strconv"
@@ -115,6 +116,40 @@ func User(c *gin.Context) {
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
+
+	c.JSON(http.StatusOK, user)
+}
+
+func EditProfile(c *gin.Context) {
+	var r requests.EditProfileRequest
+	if err := c.ShouldBindJSON(&r); err != nil {
+		c.JSON(400, gin.H{"error": err.Error()})
+	}
+
+	user, err := util.ExtractUserFromRequest(c)
+	if err != nil {
+		c.AbortWithStatus(http.StatusUnauthorized)
+		return
+	}
+
+	if r.Password != "" {
+		password, _ := bcrypt.GenerateFromPassword([]byte(r.Password), 14)
+		err = db.DB.
+			Exec("UPDATE users SET username = ?, email = ?, password = ? WHERE id = ?",
+				r.Username, r.Email, password, user.ID).Error
+	} else {
+		err = db.DB.
+			Exec("UPDATE users SET username = ?, email = ? WHERE id = ?",
+				r.Username, r.Email, user.ID).Error
+	}
+	if err != nil {
+		log.Error().Err(err).Msg("error updating user")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	// обновляем модель пользователя
+	db.DB.Raw("SELECT * FROM users WHERE id = ?", user.ID).Scan(&user)
 
 	c.JSON(http.StatusOK, user)
 }

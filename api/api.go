@@ -46,6 +46,7 @@ func (a *API) UseRoutes() {
 	api.POST("/register", handlers.Register)
 	api.POST("/login", handlers.Login)
 	api.GET("/user", middleware.AuthMiddleware, handlers.User)
+	api.PUT("/user", middleware.AuthMiddleware, handlers.EditProfile)
 
 	api.GET("/roles", handlers.Roles)
 	api.GET("/genres", handlers.Genres)
@@ -55,9 +56,14 @@ func (a *API) UseRoutes() {
 	api.GET("/artists/:artist", handlers.Artist)
 
 	api.GET("/beats", handlers.Beats)
+	api.GET("/snippets", handlers.Snippets)
 	api.GET("/beats/purchased", middleware.AuthMiddleware, middleware.ClientMiddleware, handlers.PurchasedBeats)
 	api.GET("/beats/:beat", handlers.Beat)
-	api.POST("/beats/:beat/licenses/:license/edit", handlers.EditLicense)
+	api.PUT("/beats/:beat", handlers.EditBeat)
+	api.POST("/beats/:beat/hide", handlers.HideBeat)
+	api.POST("/beats/:beat/unhide", handlers.UnhideBeat)
+	api.DELETE("/beats/:beat", handlers.DeleteBeat)
+	api.PUT("/beats/:beat/licenses/:license", handlers.EditLicense)
 	api.POST("/beats/:beat/purchase", middleware.AuthMiddleware, middleware.ClientMiddleware, handlers.PurchaseBeat)
 	api.POST("/beats/create", middleware.AuthMiddleware, middleware.ArtistMiddleware, handlers.CreateBeat)
 

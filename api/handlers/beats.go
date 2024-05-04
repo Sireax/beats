@@ -69,7 +69,7 @@ func CreateDemo(c *gin.Context) {
 }
 
 func CreateBeat(c *gin.Context) {
-	var r requests.CreateBeatRequest
+	var r requests.UpdateBeatRequest
 	err := c.ShouldBindJSON(&r)
 	if err != nil {
 		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -121,10 +121,71 @@ func CreateBeat(c *gin.Context) {
 	c.JSON(http.StatusCreated, beat)
 }
 
+func EditBeat(c *gin.Context) {
+	var r requests.UpdateBeatRequest
+	if err := c.ShouldBindJSON(&r); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	beatID := c.Param("beat")
+	err := db.DB.
+		Exec("UPDATE beats SET title = ?, photo = ?, link = ?, genre_id = ? WHERE id = ?",
+			r.Title, r.Photo, r.Link, r.GenreID, beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error updating beat")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	var beat *models.Beat
+	db.DB.Raw("SELECT * FROM beats WHERE id = ?", beatID).Scan(&beat)
+	c.JSON(200, beat)
+}
+
+func DeleteBeat(c *gin.Context) {
+	beatID := c.Param("beat")
+
+	err := db.DB.Exec("DELETE FROM beats WHERE id = ?", beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error deleting beat")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.AbortWithStatus(http.StatusOK)
+}
+
+func HideBeat(c *gin.Context) {
+	beatID := c.Param("beat")
+
+	err := db.DB.Exec("UPDATE beats SET is_hide = true WHERE id = ?", beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error hiding beat")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(200, gin.H{})
+}
+
+func UnhideBeat(c *gin.Context) {
+	beatID := c.Param("beat")
+
+	err := db.DB.Exec("UPDATE beats SET is_hide = false WHERE id = ?", beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error unhiding beat")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.JSON(200, gin.H{})
+}
+
 func Beats(c *gin.Context) {
 	beats := make([]*models.Beat, 0)
 
-	err := db.DB.Raw("SELECT * FROM beats ORDER BY id DESC").
+	err := db.DB.Raw("SELECT * FROM beats WHERE is_hide = false ORDER BY id DESC").
 		Scan(&beats).Error
 	if err != nil {
 		log.Error().Err(err).Msg("error getting all beats")
@@ -137,6 +198,21 @@ func Beats(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, beats)
+}
+
+func Snippets(c *gin.Context) {
+	snippets := make([]*models.Snippet, 0)
+	err := db.DB.Raw("SELECT snippets.* FROM snippets join beats b on b.id = snippets.beat_id WHERE b.is_hide = false ORDER BY id DESC").Error
+	if err != nil {
+		log.Error().Err(err).Msg("error getting all snippets")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+	for _, snippet := range snippets {
+		db.DB.Raw("SELECT * FROM beats WHERE id = ?", snippet.BeatID).Scan(&snippet.Beat)
+	}
+
+	c.JSON(200, &snippets)
 }
 
 func Beat(c *gin.Context) {
@@ -172,6 +248,9 @@ func Beat(c *gin.Context) {
 	db.DB.
 		Raw("select * from tags join public.song_tags st on tags.id = st.tag_id WHERE st.beat_id = ?", beat.ID).
 		Scan(&beat.Tags)
+	db.DB.
+		Raw("select * from genres where id = ? limit 1", beat.ID).
+		Scan(&beat.Genre)
 
 	c.JSON(http.StatusOK, beat)
 }
