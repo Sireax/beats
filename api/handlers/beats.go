@@ -261,7 +261,7 @@ func Snippets(c *gin.Context) {
 		db.DB.Raw("SELECT * FROM beats WHERE id = ?", snippet.BeatID).Scan(&snippet.Beat)
 	}
 
-	c.JSON(200, &snippets)
+	c.JSON(200, snippets)
 }
 
 func Beat(c *gin.Context) {
