@@ -146,7 +146,55 @@ func EditBeat(c *gin.Context) {
 func DeleteBeat(c *gin.Context) {
 	beatID := c.Param("beat")
 
-	err := db.DB.Exec("DELETE FROM beats WHERE id = ?", beatID).Error
+	var purchasedCount int
+	err := db.DB.Raw("SELECT count(*) FROM purchases WHERE beat_id = ?", beatID).
+		Scan(&purchasedCount).Error
+	if err != nil {
+		c.AbortWithStatus(http.StatusInternalServerError)
+		log.Error().Err(err).Msg("error getting purchased count")
+		return
+	}
+	if purchasedCount > 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot delete already purchased beat"})
+		return
+	}
+
+	err = db.DB.Exec("DELETE FROM snippets WHERE beat_id = ?", beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error deleting snippets")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	err = db.DB.Exec("DELETE FROM demos WHERE beat_id = ?", beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error deleting demos")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	err = db.DB.Exec("DELETE FROM song_tags WHERE beat_id = ?", beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error deleting song_tags")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	err = db.DB.Exec("DELETE FROM licenses WHERE beat_id = ?", beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error deleting licenses")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	err = db.DB.Exec("DELETE FROM reviews WHERE beat_id = ?", beatID).Error
+	if err != nil {
+		log.Error().Err(err).Msg("error deleting reviews")
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	err = db.DB.Exec("DELETE FROM beats WHERE id = ?", beatID).Error
 	if err != nil {
 		log.Error().Err(err).Msg("error deleting beat")
 		c.AbortWithStatus(http.StatusInternalServerError)
@@ -193,7 +241,8 @@ func Beats(c *gin.Context) {
 		return
 	}
 	for _, beat := range beats {
-		db.DB.Raw("select * from users where id = ?", beat.UserID).Scan(&beat.User)
+		db.DB.Raw("select * from users where id = ? limit 1", beat.UserID).Scan(&beat.User)
+		db.DB.Raw("select * from genres where id = ? limit 1", beat.GenreID).Scan(&beat.Genre)
 		db.DB.Raw("select * from tags join public.song_tags st on tags.id = st.tag_id WHERE st.beat_id = ?", beat.ID).Scan(&beat.Tags)
 	}
 
@@ -249,7 +298,7 @@ func Beat(c *gin.Context) {
 		Raw("select * from tags join public.song_tags st on tags.id = st.tag_id WHERE st.beat_id = ?", beat.ID).
 		Scan(&beat.Tags)
 	db.DB.
-		Raw("select * from genres where id = ? limit 1", beat.ID).
+		Raw("select * from genres where id = ? limit 1", beat.GenreID).
 		Scan(&beat.Genre)
 
 	c.JSON(http.StatusOK, beat)
