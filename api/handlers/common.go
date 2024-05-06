@@ -80,6 +80,7 @@ func Artist(c *gin.Context) {
 		return
 	}
 	for _, beat := range beats {
+		db.DB.Raw("select * from genres where id = ? limit 1", beat.GenreID).Scan(&beat.Genre)
 		db.DB.Raw("select * from demos where beat_id = ? order by id desc", beat.ID).Scan(&beat.Demos)
 		db.DB.Raw("select * from snippets where beat_id = ? order by id desc", beat.ID).Scan(&beat.Snippets)
 	}

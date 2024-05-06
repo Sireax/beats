@@ -407,19 +407,23 @@ func PurchasedBeats(c *gin.Context) {
 		return
 	}
 
-	beats := make([]*models.Beat, 0)
+	purchased := make([]*models.Purchase, 0)
 	err = db.DB.
-		Raw("SELECT beats.* FROM beats join public.purchases p on beats.id = p.beat_id where p.user_id = ? order by created_at desc", user.ID).
-		Scan(&beats).Error
+		Raw("SELECT * FROM purchases WHERE user_id = ?", user.ID).
+		Scan(&purchased).Error
 	if err != nil {
 		c.AbortWithStatus(http.StatusInternalServerError)
 		log.Error().Err(err).Msg("error getting purchased beats")
 		return
 	}
-	for _, beat := range beats {
-		db.DB.Raw("select * from users where id = ?", beat.UserID).Scan(&beat.User)
-		db.DB.Raw("select * from licenses where beat_id = ?", beat.ID).Scan(&beat.Licenses)
+
+	for _, purchase := range purchased {
+		db.DB.Raw("SELECT * FROM beats WHERE id = ? LIMIT 1", purchase.BeatID).Scan(&purchase.Beat)
+		if purchase.Beat != nil {
+			db.DB.Raw("SELECT * FROM genres WHERE id = ? LIMIT 1", purchase.Beat.GenreID).Scan(&purchase.Beat.Genre)
+		}
+		db.DB.Raw("SELECT * FROM licenses WHERE id = ? LIMIT 1", purchase.LicenseID).Scan(&purchase.License)
 	}
 
-	c.JSON(http.StatusOK, beats)
+	c.JSON(http.StatusOK, purchased)
 }
