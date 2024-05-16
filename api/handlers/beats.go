@@ -251,7 +251,9 @@ func Beats(c *gin.Context) {
 
 func Snippets(c *gin.Context) {
 	snippets := make([]*models.Snippet, 0)
-	err := db.DB.Raw("SELECT snippets.* FROM snippets join beats b on b.id = snippets.beat_id WHERE b.is_hide = false ORDER BY id DESC").Error
+	err := db.DB.
+		Raw("SELECT snippets.* FROM snippets join beats b on b.id = snippets.beat_id WHERE b.is_hide = false ORDER BY id DESC").
+		Scan(&snippets).Error
 	if err != nil {
 		log.Error().Err(err).Msg("error getting all snippets")
 		c.AbortWithStatus(http.StatusInternalServerError)
