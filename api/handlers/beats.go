@@ -420,6 +420,8 @@ func PurchasedBeats(c *gin.Context) {
 	}
 
 	for _, purchase := range purchased {
+		db.DB.Raw("SELECT count(id) FROM purchases WHERE beat_id = ? LIMIT 1", purchase.BeatID).
+			Scan(&purchase.Purchased)
 		db.DB.Raw("SELECT * FROM beats WHERE id = ? LIMIT 1", purchase.BeatID).Scan(&purchase.Beat)
 		if purchase.Beat != nil {
 			db.DB.Raw("SELECT * FROM users WHERE id = ? LIMIT 1", purchase.Beat.UserID).Scan(&purchase.Beat.User)

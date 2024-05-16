@@ -14,4 +14,5 @@ type Purchase struct {
 	Beat      *Beat `json:"beat"`
 	LicenseID uint
 	License   *License `json:"license"`
+	Purchased int      `json:"purchased" gorm:"-"`
 }
