@@ -422,9 +422,15 @@ func PurchasedBeats(c *gin.Context) {
 	for _, purchase := range purchased {
 		db.DB.Raw("SELECT * FROM beats WHERE id = ? LIMIT 1", purchase.BeatID).Scan(&purchase.Beat)
 		if purchase.Beat != nil {
+			db.DB.Raw("SELECT * FROM users WHERE id = ? LIMIT 1", purchase.Beat.UserID).Scan(&purchase.Beat.User)
 			db.DB.Raw("SELECT * FROM genres WHERE id = ? LIMIT 1", purchase.Beat.GenreID).Scan(&purchase.Beat.Genre)
 		}
 		db.DB.Raw("SELECT * FROM licenses WHERE id = ? LIMIT 1", purchase.LicenseID).Scan(&purchase.License)
+		if purchase.License != nil {
+			db.DB.
+				Raw("SELECT * FROM license_types WHERE id = ? LIMIT 1", purchase.License.LicenseTypeID).
+				Scan(&purchase.License.LicenseType)
+		}
 	}
 
 	c.JSON(http.StatusOK, purchased)
