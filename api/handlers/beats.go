@@ -284,6 +284,9 @@ func Beat(c *gin.Context) {
 		Raw("select * from licenses where beat_id = ?", beat.ID).
 		Scan(&beat.Licenses)
 	for _, license := range beat.Licenses {
+		db.DB.Raw("SELECT count(id) FROM purchases WHERE license_id = ? LIMIT 1",
+			license.ID).
+			Scan(&license.Purchased)
 		db.DB.Raw("select * from license_types where id = ?", license.LicenseTypeID).
 			Scan(&license.LicenseType)
 	}
@@ -420,8 +423,6 @@ func PurchasedBeats(c *gin.Context) {
 	}
 
 	for _, purchase := range purchased {
-		db.DB.Raw("SELECT count(id) FROM purchases WHERE beat_id = ? LIMIT 1", purchase.BeatID).
-			Scan(&purchase.Purchased)
 		db.DB.Raw("SELECT * FROM beats WHERE id = ? LIMIT 1", purchase.BeatID).Scan(&purchase.Beat)
 		if purchase.Beat != nil {
 			db.DB.Raw("SELECT * FROM users WHERE id = ? LIMIT 1", purchase.Beat.UserID).Scan(&purchase.Beat.User)
@@ -429,6 +430,9 @@ func PurchasedBeats(c *gin.Context) {
 		}
 		db.DB.Raw("SELECT * FROM licenses WHERE id = ? LIMIT 1", purchase.LicenseID).Scan(&purchase.License)
 		if purchase.License != nil {
+			db.DB.Raw("SELECT count(id) FROM purchases WHERE license_id = ? LIMIT 1",
+				purchase.LicenseID).
+				Scan(&purchase.License.Purchased)
 			db.DB.
 				Raw("SELECT * FROM license_types WHERE id = ? LIMIT 1", purchase.License.LicenseTypeID).
 				Scan(&purchase.License.LicenseType)

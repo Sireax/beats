@@ -9,4 +9,5 @@ type License struct {
 	BeatID        uint
 	Beat          *Beat `json:"beat"`
 	IsActive      bool  `json:"isActive"`
+	Purchased     int   `json:"purchased"`
 }
